@@ -82,13 +82,13 @@ module Xeroizer
       datetime     :fully_paid_on_date
       datetime     :expected_payment_date
       datetime     :planned_payment_date
-      boolean      :sent_to_contact
       boolean      :has_attachments
 
       belongs_to   :contact
       has_many     :line_items, :complete_on_page => true
       has_many     :payments
       has_many     :credit_notes
+      has_many     :prepayments
 
       validates_presence_of :date, :due_date, :unless => :new_record?
       validates_inclusion_of :type, :in => INVOICE_TYPES
@@ -151,7 +151,7 @@ module Xeroizer
         # Calculate sub_total from line_items.
         def sub_total(always_summary = false)
           if !@sub_total_is_set && not_summary_or_loaded_record(always_summary)
-            overall_sum = (line_items || []).inject(BigDecimal.new('0')) { | sum, line_item | sum + line_item.line_amount }
+            overall_sum = (line_items || []).inject(BigDecimal('0')) { | sum, line_item | sum + line_item.line_amount }
 
             # If the default amount types are inclusive of 'tax' then remove the tax amount from this sub-total.
             overall_sum -= total_tax if line_amount_types == 'Inclusive'
@@ -164,7 +164,7 @@ module Xeroizer
         # Calculate total_tax from line_items.
         def total_tax(always_summary = false)
           if !@total_tax_is_set && not_summary_or_loaded_record(always_summary)
-            (line_items || []).inject(BigDecimal.new('0')) { | sum, line_item | sum + line_item.tax_amount }
+            (line_items || []).inject(BigDecimal('0')) { | sum, line_item | sum + line_item.tax_amount }
           else
             attributes[:total_tax]
           end
@@ -207,6 +207,12 @@ module Xeroizer
         # Approve a draft invoice
         def approve!
           change_status!('AUTHORISED')
+        end
+
+        # Send an email containing the invoice.
+        def email
+          email_url = "#{parent.url}/#{CGI.escape(id)}/Email"
+          parent.application.http_post(parent.application.client, email_url, "")
         end
 
       protected

@@ -1,4 +1,4 @@
-require 'test_helper'
+require 'unit_test_helper'
 
 class RecordBaseTest < Test::Unit::TestCase
   include TestHelper
@@ -102,6 +102,16 @@ class RecordBaseTest < Test::Unit::TestCase
       an_example_instance.id = "phil's lunch box"
       an_example_instance.save
     end
+  end
+
+  context 'build' do
+
+    should "raise an undefined method error with useful message" do
+      assert_raise_message("undefined method `this_method_does_not_exist=' for #<Xeroizer::Record::Contact >") do
+        @client.Contact.build(:this_method_does_not_exist =>  true)
+      end
+    end
+
   end
 
   context 'saving' do
